@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carnet du boutiquier</title>
+<meta name="theme-color" content="#14213d">
+<meta name="description" content="Ventes, stock et crédits de ta boutique, même sans internet.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#f3f6fa;--ink:#14213d;--mut:#5d6b85;--rule:#cdd8e8;--margin:#d64545;--ok:#1a7f5a;--cred:#b45309;--field:#fff;--btn:#14213d;--btnInk:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1623;--ink:#e8eefc;--mut:#8fa0bf;--rule:#26334b;--margin:#ef6a6a;--ok:#4fd1a1;--cred:#f2b365;--field:#172236;--btn:#e8eefc;--btnInk:#0f1623}}
+:root[data-theme="dark"]{--bg:#0f1623;--ink:#e8eefc;--mut:#8fa0bf;--rule:#26334b;--margin:#ef6a6a;--ok:#4fd1a1;--cred:#f2b365;--field:#172236;--btn:#e8eefc;--btnInk:#0f1623}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:520px;margin:0 auto;padding:18px 16px 40px 28px;position:relative;min-height:100vh}
+main::before{content:"";position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--margin);opacity:.55}
+h1{font-size:15px;font-weight:600;color:var(--mut);margin:0}
+.date{font-size:13px;color:var(--mut);margin:0 0 14px}
+.total{font-size:44px;font-weight:800;letter-spacing:-.02em;line-height:1.05;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.sub{display:flex;gap:18px;font-size:14px;padding-bottom:14px;border-bottom:2px solid var(--rule)}
+.sub b{font-variant-numeric:tabular-nums}
+.ok{color:var(--ok)}.cr{color:var(--cred)}
+form{padding:16px 0 18px;border-bottom:2px solid var(--rule)}
+h2{font-size:18px;margin:0 0 12px}
+label{display:block;font-size:14px;color:var(--mut);margin:12px 0 4px}
+input{width:100%;font:inherit;font-size:17px;color:var(--ink);background:var(--field);border:1.5px solid var(--rule);border-radius:8px;padding:12px}
+input:focus-visible,button:focus-visible{outline:3px solid var(--ok);outline-offset:1px}
+.row{display:flex;gap:10px}.row>div{flex:1}
+.seg{display:flex;gap:8px;margin-top:4px}
+.seg button{flex:1;font:inherit;font-weight:600;padding:12px;border-radius:8px;border:1.5px solid var(--rule);background:var(--field);color:var(--ink)}
+.seg button[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.line{display:flex;justify-content:space-between;align-items:baseline;margin:16px 0 10px;font-size:15px;color:var(--mut)}
+.line strong{font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums}
+.go{width:100%;font:inherit;font-size:17px;font-weight:700;padding:15px;border:0;border-radius:10px;background:var(--btn);color:var(--btnInk)}
+.err{color:var(--margin);font-size:14px;min-height:20px;margin:8px 0 0}
+.hist h2{margin:16px 0 4px}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--rule)}
+li .n{font-weight:600}.m{font-size:13px;color:var(--mut)}
+li .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+li .u{background:none;border:0;font:inherit;font-size:13px;color:var(--mut);padding:4px 0;text-decoration:underline}
+.sg{display:flex;gap:8px;overflow-x:auto;margin-top:8px}.sg:empty{display:none}
+.chip{flex:none;font:inherit;font-size:14px;padding:8px 12px;border-radius:999px;border:1.5px solid var(--rule);background:var(--field);color:var(--ink)}
+.empty{color:var(--mut);padding:14px 0}
+.tabs{margin:0 0 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.note{font-size:14px;min-height:20px;margin:8px 0 0;color:var(--cred)}
+.ep{color:var(--margin)}
+.alert{display:block;width:100%;text-align:left;font:inherit;font-size:14px;font-weight:600;padding:10px 12px;margin:0 0 12px;border-radius:8px;border:1.5px solid var(--cred);background:var(--field);color:var(--cred)}
+.alert[hidden]{display:none}
+li.cli{display:block;padding:0}
+.ch{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:none;border:0;font:inherit;color:inherit;padding:12px 0;text-align:left}
+.ch .n{display:block;font-weight:700}.ch .m{display:block}
+.pn{padding:4px 0 14px}
+.hl{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:6px 0;color:var(--mut)}
+.alt{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+.tabs button{font-size:16px;padding:14px 8px}
+.dnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.dnav button{font:inherit;font-size:22px;width:44px;height:44px;border-radius:8px;border:1.5px solid var(--rule);background:var(--field);color:var(--ink)}
+.dnav button:disabled{opacity:.35}
+#dl{font-weight:600}
+#bs{margin:4px 0 6px}
+.bk{font-size:14px;font-weight:600;margin:16px 0 0}
+.bk2{border-top:2px solid var(--rule);padding-top:16px;margin-top:20px}
+#bd{font-size:32px}
+.vt{display:flex;justify-content:space-between;font-size:14px;color:var(--mut);padding:12px 0;border-top:2px solid var(--rule);margin-top:6px}
+.vt b{color:var(--ink);font-variant-numeric:tabular-nums}
+.qrow{display:flex;gap:8px;margin-top:8px}
+.qrow input{width:auto;min-width:0}
+.qrow .qn{flex:3}.qrow .qq{flex:1}
+.hl{padding:10px 0;border-bottom:1px solid var(--rule);line-height:1.5}
+.hl b{color:var(--ink);font-size:15px}
+.hl .a{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.hl .a.ok{color:var(--ok)}
+@media (prefers-reduced-motion:no-preference){.flash{animation:f .6s}@keyframes f{from{background:color-mix(in srgb,var(--ok) 25%,transparent)}to{background:transparent}}}
+.sv{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px;padding-top:16px;border-top:2px solid var(--rule)}
+.sv .t{flex-basis:100%;font-size:13px;color:var(--mut);margin:0}
+label.chip{cursor:pointer}
+</style>
+</head>
+<body>
+<main>
+<h1>Carnet du boutiquier</h1>
+<p class="date" id="date"></p>
+<nav class="seg tabs"><button type="button" id="t1" aria-pressed="true">Vente</button><button type="button" id="t2" aria-pressed="false">Stock</button><button type="button" id="t3" aria-pressed="false">Crédits</button><button type="button" id="t4" aria-pressed="false">Bilan</button></nav>
+<div id="vv">
+<button type="button" class="alert" id="al" hidden></button>
+<div class="total" id="tot">0 F</div>
+<div class="sub"><span>Encaissé <b class="ok" id="cash">0 F</b></span><span>À crédit <b class="cr" id="cred">0 F</b></span></div>
+
+<form id="f" autocomplete="off">
+<h2>Nouvelle vente</h2>
+<label for="p">Produit</label>
+<input id="p" placeholder="Ex : sucre 1 kg" required>
+<div class="sg" id="sp"></div>
+<div class="row">
+<div><label for="q">Quantité</label><input id="q" type="number" inputmode="decimal" min="0" step="any" value="1"></div>
+<div><label for="u">Prix unitaire (F)</label><input id="u" type="number" inputmode="numeric" min="0" placeholder="0"></div>
+</div>
+<label>Paiement</label>
+<div class="seg">
+<button type="button" id="b1" aria-pressed="true">Comptant</button>
+<button type="button" id="b2" aria-pressed="false">À crédit</button>
+</div>
+<div id="cw" hidden>
+<label for="c">Nom du client</label>
+<input id="c" placeholder="Ex : Maman Rose">
+<div class="sg" id="sc"></div>
+</div>
+<div class="line"><span>Total de la vente</span><strong id="lt">0 F</strong></div>
+<button class="go" type="submit">Enregistrer la vente</button>
+<p class="err" id="err" role="alert"></p>
+<p class="note" id="note" role="status"></p>
+</form>
+
+<section class="hist">
+<h2>Ventes du jour</h2>
+<ul id="ls"></ul>
+</section>
+</div>
+<div id="sv" hidden>
+<button type="button" class="chip" id="qb" style="margin-bottom:12px">Ajout rapide de plusieurs produits</button>
+<form id="qf" autocomplete="off" hidden>
+<h2>Ajout rapide</h2>
+<p class="m" style="margin:0 0 4px">Remplis plusieurs produits d’un coup : le nom et la quantité en rayon. La quantité s’ajoute au stock déjà suivi.</p>
+<div id="qr"></div>
+<div class="row" style="margin-top:12px"><button type="button" class="go alt" id="qa">+ Une ligne</button><button type="button" class="go alt" id="qs">Mes produits vendus</button></div>
+<button class="go" type="submit" style="margin-top:12px">Enregistrer tous les produits</button>
+<p class="note" id="qmsg" role="status"></p>
+</form>
+<form id="sf" autocomplete="off">
+<h2>Stock</h2>
+<label for="sk">Produit</label>
+<input id="sk" placeholder="Ex : sucre 1 kg">
+<div class="sg" id="sks"></div>
+<div class="row">
+<div><label for="sq">Quantité</label><input id="sq" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+<div><label for="sth">Alerte à (ou moins)</label><input id="sth" type="number" inputmode="numeric" min="0" placeholder="3"></div>
+</div>
+<label>Mouvement</label>
+<div class="seg"><button type="button" id="m1" aria-pressed="true">Ajouter</button><button type="button" id="m2" aria-pressed="false">Retirer</button></div>
+<button class="go" type="submit" style="margin-top:16px">Enregistrer le stock</button>
+<p class="note" id="smsg" role="status"></p>
+</form>
+<section class="hist"><h2>En rayon</h2><ul id="sl"></ul></section>
+</div>
+<div id="cv" hidden>
+<div class="total cr" id="ct">0 F</div>
+<div class="sub"><span id="cn">Aucune dette en cours</span></div>
+<p class="note" id="cmsg" role="status"></p>
+<ul id="cls"></ul>
+</div>
+<div id="bv" hidden>
+<div class="dnav"><button type="button" id="dp" aria-label="Jour précédent">‹</button><span id="dl"></span><button type="button" id="dn" aria-label="Jour suivant">›</button></div>
+<div class="m bk">Dans la caisse</div>
+<div class="total ok" id="bc">0 F</div>
+<ul id="bl"></ul>
+<div class="m bk bk2" id="bk2">À recevoir des clients</div>
+<div class="total cr" id="bd">0 F</div>
+<ul id="bl2"></ul>
+<div class="vt"><span>Vente totale du jour</span><b id="vt">0 F</b></div>
+<section class="hist"><h2>Historique de vente</h2><button type="button" class="chip" id="bs"></button><ul id="bt"></ul></section>
+<section class="hist"><h2>À racheter</h2><ul id="br"></ul></section>
+</div>
+<footer class="sv"><p class="t">Sauvegarde de tes données (stockées sur ce téléphone)</p>
+<button type="button" class="chip" id="ex">Exporter mes données</button>
+<label class="chip" for="im">Importer une sauvegarde</label>
+<input type="file" id="im" accept="application/json,.json" hidden>
+<p class="note" id="xmsg" role="status" style="flex-basis:100%"></p></footer>
+</main>
+<script>
+var K="carnet_boutiquier_v1",ev=[],mode="cash";
+try{ev=JSON.parse(localStorage.getItem(K))||[]}catch(e){ev=[]}
+function save(){try{localStorage.setItem(K,JSON.stringify(ev))}catch(e){}}
+function $(i){return document.getElementById(i)}
+function F(n){return new Intl.NumberFormat("fr-FR").format(Math.round(n))+" F"}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function today(t){return new Date(t).toDateString()===new Date().toDateString()}
+$("date").textContent=new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+
+function setMode(m){mode=m;$("b1").setAttribute("aria-pressed",m==="cash");$("b2").setAttribute("aria-pressed",m==="credit");$("cw").hidden=m!=="credit"}
+$("b1").onclick=function(){setMode("cash")};
+$("b2").onclick=function(){setMode("credit");$("c").focus()};
+
+function preview(){$("lt").textContent=F((+$("q").value||0)*(+$("u").value||0))}
+$("q").oninput=$("u").oninput=preview;
+function fillPrice(){
+  var n=$("p").value.trim().toLowerCase();
+  for(var i=ev.length-1;i>=0;i--){if(ev[i].p.toLowerCase()===n){$("u").value=ev[i].u;preview();break}}
+}
+function names(k){var s={};ev.forEach(function(e){if(e[k])s[e[k]]=1});return Object.keys(s)}
+function chips(id,list,q,pick){
+  var b=$(id),t=(q||"").trim().toLowerCase();
+  var m=t?list.filter(function(x){var l=x.toLowerCase();return l.indexOf(t)>-1&&l!==t}).slice(0,6):[];
+  b.innerHTML=m.map(function(x){return'<button type="button" class="chip">'+esc(x)+'</button>'}).join("");
+  b.onclick=function(e){var c=e.target.closest(".chip");if(c&&pick)pick(c.textContent)};
+}
+$("p").onchange=fillPrice;
+$("p").oninput=function(){chips("sp",names("p"),$("p").value,function(v){$("p").value=v;fillPrice();chips("sp",[],"")})};
+$("c").oninput=function(){chips("sc",names("c"),$("c").value,function(v){$("c").value=v;chips("sc",[],"")})};
+
+function lists(){chips("sp",[],"");chips("sc",[],"");banner()}
+
+function render(){
+  var d=ev.filter(function(e){return today(e.t)}),cash=0,cr=0;
+  d.forEach(function(e){var s=e.q*e.u;if(e.m==="credit")cr+=s;else cash+=s});
+  $("tot").textContent=F(cash+cr);$("cash").textContent=F(cash);$("cred").textContent=F(cr);
+  var h="";
+  d.slice().reverse().forEach(function(e){
+    var hr=new Date(e.t).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+    h+='<li><div><div class="n">'+esc(e.p)+' × '+e.q+'</div><div class="m">'+hr+' · '+(e.m==="credit"?'<span class="cr">Crédit : '+esc(e.c)+'</span>':'<span class="ok">Comptant</span>')+'</div><button class="u" data-id="'+e.id+'">Annuler cette vente</button></div><div class="r">'+F(e.q*e.u)+'</div></li>';
+  });
+  $("ls").innerHTML=h||'<li class="empty">Aucune vente aujourd’hui. Enregistre la première ci-dessus.</li>';
+  lists();
+}
+
+$("ls").onclick=function(x){
+  var b=x.target.closest("button[data-id]");if(!b)return;
+  if(b.dataset.s){ev=ev.filter(function(e){return String(e.id)!==b.dataset.id});save();render();return}
+  b.dataset.s=1;b.textContent="Confirmer l’annulation";
+  setTimeout(function(){if(b.isConnected){delete b.dataset.s;b.textContent="Annuler cette vente"}},3000);
+};
+
+$("f").onsubmit=function(x){
+  x.preventDefault();
+  var p=$("p").value.trim(),q=+$("q").value,u=+$("u").value,c=$("c").value.trim(),er="";
+  if(!p)er="Écris le nom du produit.";
+  else if(!(q>0))er="La quantité doit être supérieure à 0.";
+  else if(!(u>=0)||$("u").value==="")er="Indique le prix unitaire.";
+  else if(mode==="credit"&&!c)er="Indique le nom du client pour une vente à crédit.";
+  $("err").textContent=er;if(er)return;
+  ev.push({id:Date.now(),t:Date.now(),p:p,q:q,u:u,m:mode,c:mode==="credit"?c:""});
+  save();
+  $("p").value="";$("q").value=1;$("u").value="";$("c").value="";setMode("cash");preview();render();
+  var f=$("ls").firstElementChild;if(f)f.classList.add("flash");
+  note(p);
+  $("p").focus();
+};
+
+var K2="carnet_stock_v1",stk={m:[],th:{}},sm="add";
+try{var r=JSON.parse(localStorage.getItem(K2));if(r&&r.m){stk=r;if(!stk.th)stk.th={}}}catch(e){}
+function save2(){try{localStorage.setItem(K2,JSON.stringify(stk))}catch(e){}}
+function key(s){return String(s).trim().toLowerCase()}
+function thr(k){return stk.th[k]!==undefined?stk.th[k]:3}
+function levels(){
+  var o={};
+  stk.m.forEach(function(m){var k=key(m.p),x=o[k]||(o[k]={n:m.p,q:0,t:m.t});x.q+=m.d;x.n=m.p;if(m.t<x.t)x.t=m.t});
+  ev.forEach(function(e){var x=o[key(e.p)];if(x&&e.t>=x.t)x.q-=e.q});
+  Object.keys(o).forEach(function(k){o[k].q=Math.round(o[k].q*1000)/1000});
+  return o;
+}
+function banner(){
+  var o=levels(),n=Object.keys(o).filter(function(k){return o[k].q<=thr(k)}).length,b=$("al");
+  b.hidden=!n;
+  if(n)b.textContent="⚠ "+n+(n>1?" produits sont bas ou épuisés. Voir le stock":" produit est bas ou épuisé. Voir le stock");
+}
+function note(p){
+  var k=key(p),o=levels()[k],n=$("note");n.textContent="";
+  if(!o)return;
+  if(o.q<0)n.textContent="Stock de "+o.n+" négatif : pense à corriger le stock.";
+  else if(o.q===0)n.textContent="Plus de "+o.n+" en rayon.";
+  else if(o.q<=thr(k))n.textContent="Stock bas : "+o.n+" ("+o.q+" restant"+(o.q>1?"s":"")+").";
+}
+function renderStock(){
+  var o=levels(),h="";
+  var ks=Object.keys(o).sort(function(a,b){return (o[a].q<=thr(a)?0:1)-(o[b].q<=thr(b)?0:1)||o[a].n.localeCompare(o[b].n)});
+  ks.forEach(function(k){
+    var x=o[k],s=x.q<0?'<span class="ep">Négatif</span>':x.q===0?'<span class="ep">Épuisé</span>':x.q<=thr(k)?'<span class="cr">Stock bas</span>':'';
+    h+='<li><div><div class="n">'+esc(x.n)+'</div><div class="m">Alerte à '+thr(k)+' ou moins</div></div><div class="r">'+x.q+'<div class="m">'+s+'</div></div></li>';
+  });
+  $("sl").innerHTML=h||'<li class="empty">Aucun produit suivi. Ajoute ton premier stock ci-dessus.</li>';
+  banner();
+}
+function tab(n){
+  $("vv").hidden=n!=="v";$("sv").hidden=n!=="s";$("cv").hidden=n!=="c";$("bv").hidden=n!=="b";
+  $("t1").setAttribute("aria-pressed",n==="v");$("t2").setAttribute("aria-pressed",n==="s");$("t3").setAttribute("aria-pressed",n==="c");$("t4").setAttribute("aria-pressed",n==="b");
+  if(n==="s")renderStock();else if(n==="c")renderCredit();else if(n==="b")renderBilan();else render();
+}
+$("t1").onclick=function(){tab("v")};$("t2").onclick=function(){tab("s")};$("al").onclick=function(){tab("s")};$("t3").onclick=function(){tab("c")};$("t4").onclick=function(){tab("b")};
+function setSm(m){sm=m;$("m1").setAttribute("aria-pressed",m==="add");$("m2").setAttribute("aria-pressed",m==="rem")}
+$("m1").onclick=function(){setSm("add")};$("m2").onclick=function(){setSm("rem")};
+function allNames(){var s={};ev.forEach(function(e){s[e.p]=1});stk.m.forEach(function(m){s[m.p]=1});return Object.keys(s)}
+$("sk").oninput=function(){chips("sks",allNames(),$("sk").value,function(v){$("sk").value=v;var t=stk.th[key(v)];$("sth").value=t===undefined?"":t;chips("sks",[],"")})};
+$("sf").onsubmit=function(x){
+  x.preventDefault();
+  var p=$("sk").value.trim(),q=+$("sq").value,t=$("sth").value,m=$("smsg");
+  if(!p){m.textContent="Écris le nom du produit.";return}
+  if(!(q>0)){m.textContent="La quantité doit être supérieure à 0.";return}
+  stk.m.push({id:Date.now(),t:Date.now(),p:p,d:sm==="rem"?-q:q});
+  if(t!==""&&+t>=0)stk.th[key(p)]=+t;
+  save2();
+  var o=levels()[key(p)];
+  $("sk").value="";$("sq").value="";$("sth").value="";chips("sks",[],"");setSm("add");
+  m.textContent="Enregistré : "+o.n+", "+o.q+" en rayon.";
+  renderStock();
+};
+
+var K3="carnet_credit_v1",cp={p:[]},op="";
+try{var r3=JSON.parse(localStorage.getItem(K3));if(r3&&r3.p)cp=r3}catch(e){}
+function save3(){try{localStorage.setItem(K3,JSON.stringify(cp))}catch(e){}}
+function d8(t){return new Date(t).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}
+function d9(t){return new Date(t).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
+function debts(){
+  var o={};
+  ev.forEach(function(e){
+    if(e.m!=="credit"||!e.c)return;
+    var k=key(e.c),x=o[k]||(o[k]={n:e.c,b:0,t:0,h:[],pr:[],ls:0});
+    x.n=e.c;x.b+=e.q*e.u;x.t=Math.max(x.t,e.t);var kk=key(e.p),ds=new Date(e.t).toDateString(),g=null;
+    x.h.forEach(function(i){if(i.s&&key(i.l)===kk&&i.ds===ds&&i.u===e.u)g=i});
+    if(g){g.q+=e.q;g.a+=e.q*e.u;g.t=Math.max(g.t,e.t)}else x.h.push({t:e.t,l:e.p,q:e.q,u:e.u,a:e.q*e.u,s:1,ds:ds});x.pr.push({p:e.p,t:e.t,q:e.q});x.ls=Math.max(x.ls,e.t);
+  });
+  cp.p.forEach(function(p){
+    var x=o[key(p.c)];if(!x)return;
+    x.b-=p.a;x.t=Math.max(x.t,p.t);x.h.push({t:p.t,l:"Paiement",a:-p.a,id:p.id});
+  });
+  Object.keys(o).forEach(function(k){o[k].b=Math.round(o[k].b)});
+  return o;
+}
+function renderCredit(){
+  var o=debts(),tot=0,h="";
+  var ks=Object.keys(o).filter(function(k){return o[k].b>0}).sort(function(a,b){return o[b].b-o[a].b});
+  ks.forEach(function(k){
+    var x=o[k];tot+=x.b;
+    var ps=[],qs={};x.pr.sort(function(a,b){return b.t-a.t}).forEach(function(i){var kk=key(i.p);if(!qs[kk]){qs[kk]=0;ps.push(i)}qs[kk]+=i.q});
+    var pt=ps.slice(0,3).map(function(i){return esc(i.p)}).join(", ")+(ps.length>3?" +"+(ps.length-3):"");
+    h+='<li class="cli"><button type="button" class="ch" data-o="'+esc(k)+'"><span><span class="n">'+esc(x.n)+'</span><span class="m">'+pt+'</span></span><span class="r cr">'+F(x.b)+'</span></button>';
+    if(op===k){
+      h+='<div class="pn"><label for="pa">Montant payé (F)</label><input id="pa" type="number" inputmode="numeric" min="0" placeholder="0"><div class="row" style="margin-top:10px"><button type="button" class="go" data-pay="1">Encaisser</button><button type="button" class="go alt" data-all="1">Tout solder</button></div><div style="margin-top:14px"><div class="m" style="font-weight:600;margin-bottom:2px">Historique détaillé</div>';
+      x.h.sort(function(a,b){return b.t-a.t}).forEach(function(i){
+        h+=i.id?'<div class="hl"><span><b>Paiement reçu</b><br>'+d9(i.t)+'<br><button type="button" class="u" data-undo="'+i.id+'">Annuler</button></span><span class="a ok">−'+F(-i.a)+'</span></div>':'<div class="hl"><span><b>'+esc(i.l)+'</b><br>Quantité : '+Math.round(i.q*1000)/1000+' · '+F(i.u)+' l’unité<br>'+d9(i.t)+'</span><span class="a">'+F(i.a)+'</span></div>';
+      });
+      h+='</div></div>';
+    }
+    h+='</li>';
+  });
+  $("ct").textContent=F(tot);
+  $("cn").textContent=ks.length?ks.length+(ks.length>1?" clients te doivent de l’argent":" client te doit de l’argent"):"Aucune dette en cours";
+  $("cls").innerHTML=h||'<li class="empty">Aucun client ne te doit d’argent. Les ventes à crédit apparaissent ici.</li>';
+}
+$("cls").onclick=function(x){
+  var t=x.target.closest("button");if(!t)return;
+  var m=$("cmsg");m.textContent="";
+  if(t.dataset.o!==undefined){op=op===t.dataset.o?"":t.dataset.o;renderCredit();return}
+  var o=debts()[op];if(!o)return;
+  if(t.dataset.undo){
+    if(t.dataset.s){cp.p=cp.p.filter(function(p){return String(p.id)!==t.dataset.undo});save3();renderCredit();return}
+    t.dataset.s=1;t.textContent="Confirmer";
+    setTimeout(function(){if(t.isConnected){delete t.dataset.s;t.textContent="Annuler"}},3000);
+    return;
+  }
+  var b=o.b,a=t.dataset.all?b:+$("pa").value;
+  if(!(a>0)){m.textContent="Indique le montant payé.";return}
+  if(a>b){m.textContent="Le paiement dépasse la dette ("+F(b)+").";return}
+  cp.p.push({id:Date.now(),t:Date.now(),c:o.n,a:a});save3();
+  m.textContent=(a===b?"Dette soldée : ":"Paiement enregistré : ")+F(a)+" de "+o.n+".";
+  if(a===b)op="";
+  renderCredit();
+};
+
+var bo=0,bs=1;
+function row(l,v,c){return'<li><div>'+l+'</div><div class="r '+(c||'')+'">'+v+'</div></li>'}
+function renderBilan(){
+  var a=new Date();a.setHours(0,0,0,0);a.setDate(a.getDate()-bo);
+  var z=new Date(a);z.setDate(z.getDate()+1);a=a.getTime();z=z.getTime();
+  function inDay(t){return t>=a&&t<z}
+  var vs=ev.filter(function(e){return inDay(e.t)}),cash=0,cr=0,top={};
+  vs.forEach(function(e){
+    var s=e.q*e.u;if(e.m==="credit")cr+=s;else cash+=s;
+    var k=key(e.p),x=top[k]||(top[k]={n:e.p,q:0,a:0});x.q+=e.q;x.a+=s;
+  });
+  var pay=0;cp.p.forEach(function(p){if(inDay(p.t))pay+=p.a});
+  $("dl").textContent=bo===0?"Aujourd’hui":new Date(a).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+  $("dn").disabled=bo===0;
+  $("bc").textContent=F(cash+pay);
+  $("bl").innerHTML=row("Payé directement",F(cash))+row("Dettes encaissées",F(pay));
+  var d=debts(),t=0;Object.keys(d).forEach(function(k){if(d[k].b>0)t+=d[k].b});
+  $("bd").textContent=F(bo===0?t:cr);
+  $("bk2").textContent=bo===0?"À recevoir des clients":"Crédit accordé ce jour-là";
+  $("bl2").innerHTML=bo===0?row("Crédit accordé aujourd’hui",F(cr),"cr"):"";
+  $("vt").textContent=F(cash+cr);
+  var tk=Object.keys(top).sort(function(x,y){return bs*(top[y].q-top[x].q||top[y].a-top[x].a)});
+  $("bs").textContent=(bs===1?"Du plus vendu au moins vendu":"Du moins vendu au plus vendu")+" ↕";
+  $("bt").innerHTML=tk.map(function(k){var x=top[k];return row(esc(x.n)+' <span class="m">× '+Math.round(x.q*1000)/1000+'</span>',F(x.a))}).join("")||'<li class="empty">Aucune vente ce jour-là.</li>';
+  var lv=levels(),lk=Object.keys(lv).filter(function(k){return lv[k].q<=thr(k)}).sort(function(x,y){return lv[x].q-lv[y].q});
+  $("br").innerHTML=lk.map(function(k){var x=lv[k];return row(esc(x.n),x.q<=0?"Épuisé":x.q+" restant"+(x.q>1?"s":""),x.q<=0?"ep":"cr")}).join("")||'<li class="empty">Rien à racheter pour l’instant.</li>';
+}
+$("dp").onclick=function(){bo++;renderBilan()};
+$("dn").onclick=function(){if(bo>0){bo--;renderBilan()}};
+$("bs").onclick=function(){bs=-bs;renderBilan()};
+
+function qrow(n,q){
+  var d=document.createElement("div");d.className="qrow";
+  d.innerHTML='<input class="qn" placeholder="Produit" aria-label="Produit"><input class="qq" type="number" inputmode="decimal" min="0" step="any" placeholder="Qté" aria-label="Quantité">';
+  d.children[0].value=n||"";d.children[1].value=q||"";
+  $("qr").appendChild(d);return d;
+}
+function qreset(){$("qr").innerHTML="";for(var i=0;i<5;i++)qrow()}
+$("qb").onclick=function(){var f=$("qf");f.hidden=!f.hidden;if(!f.hidden&&!$("qr").children.length)qreset()};
+$("qa").onclick=function(){qrow().children[0].focus()};
+$("qs").onclick=function(){
+  var lv=levels(),seen={},list=[],have={},n=0;
+  ev.forEach(function(e){var k=key(e.p);if(!lv[k]&&!seen[k]){seen[k]=1;list.push(e.p)}});
+  Array.prototype.slice.call($("qr").children).forEach(function(r){if(!r.children[0].value.trim()&&r.children[1].value==="")r.remove()});
+  Array.prototype.forEach.call($("qr").children,function(r){have[key(r.children[0].value)]=1});
+  list.forEach(function(p){if(!have[key(p)]){qrow(p);n++}});
+  if(!$("qr").children.length)qreset();
+  $("qmsg").textContent=n?n+" produit"+(n>1?"s":"")+" ajouté"+(n>1?"s":"")+" à la liste. Indique la quantité en rayon de chacun.":"Tous tes produits vendus sont déjà suivis en stock.";
+};
+$("qf").onsubmit=function(x){
+  x.preventDefault();
+  var rows=Array.prototype.slice.call($("qr").children),ok=0,bad=0,now=Date.now();
+  rows.forEach(function(r){
+    var p=r.children[0].value.trim(),qv=r.children[1].value,q=+qv;
+    if(!p&&qv==="")return;
+    if(!p||qv===""||!(q>=0)){bad++;return}
+    stk.m.push({id:now+ok,t:now,p:p,d:q});ok++;r.dataset.done=1;
+  });
+  if(ok){
+    save2();
+    rows.forEach(function(r){if(r.dataset.done)r.remove()});
+    if(!$("qr").children.length)qreset();
+    renderStock();
+  }
+  $("qmsg").textContent=!ok&&!bad?"Remplis au moins une ligne.":(ok?ok+" produit"+(ok>1?"s":"")+" enregistré"+(ok>1?"s":"")+". ":"")+(bad?bad+" ligne"+(bad>1?"s":"")+" à compléter (nom et quantité).":"");
+};
+render();
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
+$("ex").onclick=function(){
+  try{
+    var b=new Blob([JSON.stringify({v:1,ev:ev,stk:stk,cp:cp})],{type:"application/json"}),a=document.createElement("a");
+    a.href=URL.createObjectURL(b);a.download="carnet-sauvegarde-"+new Date().toISOString().slice(0,10)+".json";
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
+    $("xmsg").textContent="Sauvegarde créée : cherche le fichier dans tes Téléchargements.";
+  }catch(e){$("xmsg").textContent="L’export a échoué sur ce navigateur."}
+};
+$("im").onchange=function(){
+  var f=this.files[0],inp=this;if(!f)return;
+  var fr=new FileReader();
+  fr.onload=function(){
+    try{
+      var d=JSON.parse(fr.result);
+      if(!Array.isArray(d.ev)||!d.stk||!Array.isArray(d.stk.m)||!d.cp||!Array.isArray(d.cp.p))throw 0;
+      ev=d.ev;stk=d.stk;if(!stk.th)stk.th={};cp=d.cp;
+      save();save2();save3();render();renderStock();renderCredit();
+      $("xmsg").textContent="Données importées : "+ev.length+" vente"+(ev.length>1?"s":"")+" retrouvée"+(ev.length>1?"s":"")+".";
+    }catch(e){$("xmsg").textContent="Ce fichier n’est pas une sauvegarde valide."}
+    inp.value="";
+  };
+  fr.readAsText(f);
+};
+</script>
+</body>
+</html>
