@@ -1,5 +1,5 @@
 // Pour publier une mise à jour : change le numéro de version ci-dessous.
-var C="carnet-v2",FILES=["./","index.html","config.js","manifest.webmanifest","icon-192.png","icon-512.png"];
+var C="carnet-v3",FILES=["./","index.html","config.js","manifest.webmanifest","icon-192.png","icon-512.png","icon-maskable-512.png"];
 self.addEventListener("install",function(e){
   e.waitUntil(caches.open(C).then(function(c){return c.addAll(FILES)}));
   self.skipWaiting();
