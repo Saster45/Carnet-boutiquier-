@@ -79,12 +79,17 @@ li.cli{display:block;padding:0}
 .sv{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px;padding-top:16px;border-top:2px solid var(--rule)}
 .sv .t{flex-basis:100%;font-size:13px;color:var(--mut);margin:0}
 label.chip{cursor:pointer}
+.syl{display:block;background:none;border:0;font:inherit;font-size:13px;color:var(--mut);padding:0 0 10px;text-align:left;text-decoration:underline}
+.syl[hidden]{display:none}
+.acc{flex-basis:100%;padding-bottom:14px;margin-bottom:6px;border-bottom:2px solid var(--rule)}
+.acc[hidden]{display:none}
 </style>
 </head>
 <body>
 <main>
 <h1>Carnet du boutiquier</h1>
 <p class="date" id="date"></p>
+<button type="button" class="syl" id="sy" hidden></button>
 <nav class="seg tabs"><button type="button" id="t1" aria-pressed="true">Vente</button><button type="button" id="t2" aria-pressed="false">Stock</button><button type="button" id="t3" aria-pressed="false">Crédits</button><button type="button" id="t4" aria-pressed="false">Bilan</button></nav>
 <div id="vv">
 <button type="button" class="alert" id="al" hidden></button>
@@ -165,12 +170,29 @@ label.chip{cursor:pointer}
 <section class="hist"><h2>Historique de vente</h2><button type="button" class="chip" id="bs"></button><ul id="bt"></ul></section>
 <section class="hist"><h2>À racheter</h2><ul id="br"></ul></section>
 </div>
-<footer class="sv"><p class="t">Sauvegarde de tes données (stockées sur ce téléphone)</p>
+<footer class="sv">
+<div id="acc" class="acc" hidden>
+<p class="t">Compte et sauvegarde en ligne</p>
+<div id="af">
+<label for="aw">Nom du boutiquier</label>
+<input id="aw" autocomplete="off" placeholder="Ex : Boutique Maman Rose">
+<div class="row"><div style="flex:0 0 84px"><label for="ax">Indicatif</label><input id="ax" type="tel" inputmode="numeric" value="229"></div><div><label for="an">Numéro de téléphone</label><input id="an" type="tel" inputmode="numeric" placeholder="Ex : 0197000000"></div></div>
+<label for="ac">Code secret (6 chiffres)</label>
+<input id="ac" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="••••••">
+<p class="m" style="margin:6px 0 0">Tape ton numéro toujours de la même façon. Note bien ton code : il ne peut pas être retrouvé s’il est oublié.</p>
+<div class="row" style="margin-top:12px"><button type="button" class="go" id="a1">Créer mon compte</button><button type="button" class="go alt" id="a2">Me connecter</button></div>
+</div>
+<div id="ai" hidden><p id="ap" style="margin:0 0 8px;font-weight:600"></p>
+<div class="row"><button type="button" class="go alt" id="a3">Sauvegarder maintenant</button><button type="button" class="go alt" id="a4">Me déconnecter</button></div></div>
+<p class="note" id="am" role="status" style="color:var(--ink)"></p>
+</div>
+<p class="t">Sauvegarde de tes données (stockées sur ce téléphone)</p>
 <button type="button" class="chip" id="ex">Exporter mes données</button>
 <label class="chip" for="im">Importer une sauvegarde</label>
 <input type="file" id="im" accept="application/json,.json" hidden>
 <p class="note" id="xmsg" role="status" style="flex-basis:100%"></p></footer>
 </main>
+<script src="config.js"></script>
 <script>
 var K="carnet_boutiquier_v1",ev=[],mode="cash";
 try{ev=JSON.parse(localStorage.getItem(K))||[]}catch(e){ev=[]}
@@ -452,6 +474,141 @@ $("im").onchange=function(){
   };
   fr.readAsText(f);
 };
+// ---- Compte et sauvegarde en ligne (Supabase, sans SDK) ----
+var CF=window.CARNET_CFG||{},AK="carnet_auth_v1",DK="carnet_dirty_v1",LK="carnet_lastsync_v1",au=null,tm=null,busy=false,fail=false,chg=0;
+try{au=JSON.parse(localStorage.getItem(AK))}catch(e){au=null}
+var _s=save,_s2=save2,_s3=save3;
+save=function(){_s();touch()};save2=function(){_s2();touch()};save3=function(){_s3();touch()};
+function cfgOk(){return !!(CF.url&&CF.key&&String(CF.url).indexOf("http")===0)}
+function isDirty(){try{return localStorage.getItem(DK)==="1"}catch(e){return false}}
+function setDirty(v){try{localStorage.setItem(DK,v?"1":"0")}catch(e){}}
+function lastSync(){try{return +localStorage.getItem(LK)||0}catch(e){return 0}}
+function hasData(){return ev.length+stk.m.length+cp.p.length>0}
+function mail(i,n){return String(i).replace(/\D/g,"")+String(n).replace(/\D/g,"")+"@carnet-boutiquier.app"}
+function jh(t){var h={"apikey":CF.key,"Content-Type":"application/json"};if(t)h.Authorization="Bearer "+t;return h}
+function amsg(t){$("am").textContent=t}
+function ago(t){var m=Math.round((Date.now()-t)/60000);return m<1?"à l’instant":m<60?"il y a "+m+" min":m<1440?"il y a "+Math.round(m/60)+" h":"le "+new Date(t).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}
+function sess(d,ph,nm){
+  au={at:d.access_token,rt:d.refresh_token,exp:Date.now()+(d.expires_in||3600)*1000,uid:(d.user&&d.user.id)||(au&&au.uid),ph:ph||(au&&au.ph)||"",nm:nm||(d.user&&d.user.user_metadata&&d.user.user_metadata.nom)||(au&&au.nm)||""};
+  try{localStorage.setItem(AK,JSON.stringify(au))}catch(e){}
+}
+function authCall(p,b){
+  return fetch(CF.url+"/auth/v1/"+p,{method:"POST",headers:jh(),body:JSON.stringify(b)}).then(function(r){
+    return r.json().catch(function(){return {}}).then(function(j){return {ok:r.ok,s:r.status,j:j}});
+  });
+}
+function token(){
+  if(!au)return Promise.reject("noauth");
+  if(au.exp-60000>Date.now())return Promise.resolve(au.at);
+  return authCall("token?grant_type=refresh_token",{refresh_token:au.rt}).then(function(x){
+    if(!x.ok||!x.j.access_token){if(x.s===400||x.s===401)logout(true);throw "refresh"}
+    sess(x.j);return au.at;
+  });
+}
+function pull(){
+  return token().then(function(t){return fetch(CF.url+"/rest/v1/carnets?select=data,updated_at",{headers:jh(t)})})
+  .then(function(r){if(!r.ok)throw "pull";return r.json()}).then(function(a){return a&&a[0]||null});
+}
+function push(){
+  return token().then(function(t){
+    var h=jh(t);h.Prefer="resolution=merge-duplicates,return=minimal";
+    return fetch(CF.url+"/rest/v1/carnets?on_conflict=user_id",{method:"POST",headers:h,
+      body:JSON.stringify({user_id:au.uid,data:{v:1,ev:ev,stk:stk,cp:cp},updated_at:new Date().toISOString()})});
+  }).then(function(r){if(!r.ok)throw "push"});
+}
+function status(){
+  var s=$("sy"),a=$("acc");
+  if(!cfgOk()){s.hidden=true;a.hidden=true;return}
+  s.hidden=false;a.hidden=false;
+  var t;
+  if(!au)t="Sauvegarde en ligne : non activée. Activer";
+  else if(busy)t="Sauvegarde en cours…";
+  else if(fail)t="Échec de la sauvegarde. Réessayer";
+  else if(isDirty())t=navigator.onLine?"Sauvegarde en attente…":"Hors ligne : sauvegarde en attente";
+  else{var l=lastSync();t="Sauvegardé"+(l?" "+ago(l):"")}
+  s.textContent=t;
+  $("af").hidden=!!au;$("ai").hidden=!au;
+  if(au)$("ap").textContent="Connecté : "+(au.nm?au.nm+" · ":"")+"+"+au.ph;
+}
+function syncNow(){
+  if(!au||!cfgOk()||busy)return;
+  if(!navigator.onLine){status();return}
+  var v=chg;busy=true;fail=false;status();
+  push().then(function(){
+    if(v===chg)setDirty(false);
+    try{localStorage.setItem(LK,String(Date.now()))}catch(e){}
+  }).catch(function(){fail=true}).then(function(){
+    busy=false;status();
+    if(!fail&&v!==chg){clearTimeout(tm);tm=setTimeout(syncNow,500)}
+  });
+}
+function touch(){if(!au)return;chg++;setDirty(true);status();clearTimeout(tm);tm=setTimeout(syncNow,3000)}
+function applyData(d){
+  ev=d.ev||[];stk=d.stk||{m:[],th:{}};if(!stk.m)stk.m=[];if(!stk.th)stk.th={};cp=d.cp||{p:[]};if(!cp.p)cp.p=[];
+  _s();_s2();_s3();setDirty(false);
+  render();renderStock();renderCredit();renderBilan();status();
+}
+function logout(expired){
+  au=null;try{localStorage.removeItem(AK)}catch(e){}
+  status();amsg(expired?"Session expirée : reconnecte-toi.":"Déconnecté. Tes données restent sur ce téléphone.");
+}
+function cred(sg){
+  var w=$("aw").value.trim(),i=$("ax").value.replace(/\D/g,""),n=$("an").value.replace(/\D/g,""),p=$("ac").value.trim();
+  if(sg&&w.length<2)return {e:"Entre le nom du boutiquier."};
+  if(n.length<8)return {e:"Entre ton numéro de téléphone complet."};
+  if(!/^\d{6}$/.test(p))return {e:"Le code secret doit avoir exactement 6 chiffres."};
+  return {m:mail(i,n),p:p,ph:i+n,w:w};
+}
+function afterLogin(){
+  status();
+  pull().then(function(row){
+    var sd=row&&row.data,sn=sd&&Array.isArray(sd.ev)?sd.ev.length:0,pl=sn>1?"s":"";
+    if(!sd){
+      if(hasData()){amsg("Compte créé. Première sauvegarde en cours…");chg++;setDirty(true);syncNow()}
+      else amsg("Compte créé. Ton carnet sera sauvegardé automatiquement.");
+      return;
+    }
+    if(!hasData()){applyData(sd);amsg("Carnet restauré depuis ta sauvegarde : "+sn+" vente"+pl+".");return}
+    $("am").innerHTML='Ce téléphone a déjà des données, et la sauvegarde en ligne en contient aussi ('+sn+' vente'+pl+', '+ago(new Date(row.updated_at).getTime())+'). Que veux-tu garder ?<br><button type="button" class="chip" id="k1">Garder ce téléphone</button> <button type="button" class="chip" id="k2">Reprendre la sauvegarde</button>';
+    $("k1").onclick=function(){chg++;setDirty(true);syncNow();amsg("Les données de ce téléphone sont gardées et vont être sauvegardées.")};
+    $("k2").onclick=function(){applyData(sd);amsg("Sauvegarde en ligne restaurée.")};
+  }).catch(function(){amsg("Connecté, mais la sauvegarde n’a pas pu être lue. Réessaie plus tard.")});
+}
+function doSignup(){
+  var c=cred(true);if(c.e){amsg(c.e);return}
+  if(!navigator.onLine){amsg("Pas de connexion. Réessaie quand tu as du réseau.");return}
+  amsg("Création du compte…");
+  authCall("signup",{email:c.m,password:c.p,data:{nom:c.w}}).then(function(x){
+    if(x.ok&&x.j.access_token){sess(x.j,c.ph,c.w);afterLogin()}
+    else if(x.ok)amsg("Le compte demande une confirmation par e-mail. Désactive « Confirm email » dans Supabase (Authentication > Providers > Email).");
+    else if(/already|registered/i.test(JSON.stringify(x.j)))amsg("Ce numéro a déjà un compte. Touche « Me connecter ».");
+    else if(x.s===429)amsg("Trop d’essais. Attends quelques minutes.");
+    else amsg("Création impossible : "+(x.j.msg||x.j.message||x.j.error_description||x.s));
+  }).catch(function(){amsg("Pas de connexion. Réessaie quand tu as du réseau.")});
+}
+function doLogin(){
+  var c=cred();if(c.e){amsg(c.e);return}
+  if(!navigator.onLine){amsg("Pas de connexion. Réessaie quand tu as du réseau.");return}
+  amsg("Connexion…");
+  authCall("token?grant_type=password",{email:c.m,password:c.p}).then(function(x){
+    if(x.ok&&x.j.access_token){sess(x.j,c.ph);afterLogin()}
+    else if(x.s===429)amsg("Trop d’essais. Attends quelques minutes.");
+    else if(x.s===400||x.s===401||x.s===422)amsg("Numéro ou code incorrect.");
+    else amsg("Connexion impossible : "+(x.j.msg||x.j.message||x.s));
+  }).catch(function(){amsg("Pas de connexion. Réessaie quand tu as du réseau.")});
+}
+$("a1").onclick=doSignup;$("a2").onclick=doLogin;
+$("a3").onclick=function(){chg++;setDirty(true);syncNow()};
+$("a4").onclick=function(){logout(false)};
+$("sy").onclick=function(){
+  if(!au){$("acc").scrollIntoView({behavior:"smooth"});$("an").focus()}
+  else{chg++;setDirty(true);syncNow()}
+};
+window.addEventListener("online",function(){syncNow();status()});
+window.addEventListener("offline",status);
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&au&&isDirty())syncNow()});
+status();
+if(au&&isDirty())syncNow();
 </script>
 </body>
 </html>
