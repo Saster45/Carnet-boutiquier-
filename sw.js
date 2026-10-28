@@ -1,5 +1,5 @@
 // Pour publier une mise à jour : change le numéro de version ci-dessous.
-var C="carnet-v1",FILES=["./","index.html","manifest.webmanifest","icon-192.png","icon-512.png"];
+var C="carnet-v2",FILES=["./","index.html","config.js","manifest.webmanifest","icon-192.png","icon-512.png"];
 self.addEventListener("install",function(e){
   e.waitUntil(caches.open(C).then(function(c){return c.addAll(FILES)}));
   self.skipWaiting();
@@ -12,6 +12,8 @@ self.addEventListener("activate",function(e){
 });
 self.addEventListener("fetch",function(e){
   if(e.request.method!=="GET")return;
+  // Les appels vers la sauvegarde en ligne (autre domaine) ne sont jamais mis en cache.
+  if(new URL(e.request.url).origin!==self.location.origin)return;
   e.respondWith(caches.match(e.request).then(function(hit){
     var net=fetch(e.request).then(function(res){
       if(res&&res.ok){var copy=res.clone();caches.open(C).then(function(c){c.put(e.request,copy)})}
