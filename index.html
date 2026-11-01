@@ -7,6 +7,7 @@
 <meta name="theme-color" content="#14213d">
 <meta name="description" content="Ventes, stock et crédits de ta boutique, même sans internet.">
 <link rel="manifest" href="manifest.webmanifest">
+<script>try{if(localStorage.getItem("carnet_lock_v1"))document.documentElement.classList.add("locked")}catch(e){}</script>
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
@@ -83,9 +84,32 @@ label.chip{cursor:pointer}
 .syl[hidden]{display:none}
 .acc{flex-basis:100%;padding-bottom:14px;margin-bottom:6px;border-bottom:2px solid var(--rule)}
 .acc[hidden]{display:none}
+html.locked main{visibility:hidden}
+#lk{display:none;position:fixed;inset:0;z-index:50;background:var(--bg);color:var(--ink);box-sizing:border-box;padding:env(safe-area-inset-top,0px) 24px env(safe-area-inset-bottom,0px);flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow-y:auto}
+html.locked #lk,#lk.show{display:flex}
+#lk img{width:84px;height:84px;border-radius:20px;margin-bottom:12px}
+#lk h2{margin:0 0 4px;font-size:18px}
+.dots{display:flex;gap:14px;margin:14px 0 6px;height:18px}
+.dots i{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink)}
+.dots i.on{background:var(--ink)}
+.lkm{min-height:22px;margin:0;color:var(--margin);font-size:14px}
+.pad{display:grid;grid-template-columns:repeat(3,72px);gap:12px;margin:14px 0}
+.pad button{height:72px;border-radius:50%;font:inherit;font-size:26px;font-weight:600;border:1.5px solid var(--rule);background:var(--field);color:var(--ink)}
+#lk .chip{margin-top:6px}
 </style>
 </head>
 <body>
+<div id="lk" role="dialog" aria-modal="true" aria-label="Verrouillage de l’app">
+<img src="icon-192.png" alt="" width="84" height="84">
+<h2 id="lkt"></h2>
+<div class="dots" id="lkd"></div>
+<p class="lkm" id="lkm" role="alert"></p>
+<div id="cfl"></div>
+<div class="pad" id="lkp"></div>
+<button type="button" class="chip" id="lkf" hidden>Code oublié ?</button>
+<button type="button" class="chip" id="lkx" hidden>Annuler</button>
+<button type="button" class="chip" id="lkz" hidden>Effacer les données de ce téléphone</button>
+</div>
 <main>
 <h1>Carnet du boutiquier</h1>
 <p class="date" id="date"></p>
@@ -180,11 +204,19 @@ label.chip{cursor:pointer}
 <label for="ac">Code secret (6 chiffres)</label>
 <input id="ac" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="••••••">
 <p class="m" style="margin:6px 0 0">Tape ton numéro toujours de la même façon. Note bien ton code : il ne peut pas être retrouvé s’il est oublié.</p>
+<div id="cft" style="margin-top:10px"></div>
 <div class="row" style="margin-top:12px"><button type="button" class="go" id="a1">Créer mon compte</button><button type="button" class="go alt" id="a2">Me connecter</button></div>
 </div>
 <div id="ai" hidden><p id="ap" style="margin:0 0 8px;font-weight:600"></p>
 <div class="row"><button type="button" class="go alt" id="a3">Sauvegarder maintenant</button><button type="button" class="go alt" id="a4">Me déconnecter</button></div></div>
 <p class="note" id="am" role="status" style="color:var(--ink)"></p>
+</div>
+<div id="lkb" class="acc">
+<p class="t">Verrouillage de l’app (facultatif)</p>
+<p class="m" style="margin:0 0 10px">Un code à 4 chiffres demandé à l’ouverture de l’app et après une minute d’absence. Tu peux l’activer ou le désactiver quand tu veux.</p>
+<div id="lko"><button type="button" class="go alt" id="l1">Activer le code de verrouillage</button></div>
+<div id="lkn" hidden><p style="margin:0 0 8px;font-weight:600">Verrouillage activé</p><div class="row"><button type="button" class="go alt" id="l3">Changer le code</button><button type="button" class="go alt" id="l2">Désactiver</button></div></div>
+<p class="note" id="lm" role="status" style="color:var(--ink)"></p>
 </div>
 <p class="t">Sauvegarde de tes données (stockées sur ce téléphone)</p>
 <button type="button" class="chip" id="ex">Exporter mes données</button>
@@ -577,26 +609,61 @@ function afterLogin(){
 function doSignup(){
   var c=cred(true);if(c.e){amsg(c.e);return}
   if(!navigator.onLine){amsg("Pas de connexion. Réessaie quand tu as du réseau.");return}
-  amsg("Création du compte…");
-  authCall("signup",{email:c.m,password:c.p,data:{nom:c.w}}).then(function(x){
+  amsg("Création du compte… vérification anti-robot en cours.");
+  capCall("cft","signup",{email:c.m,password:c.p,data:{nom:c.w}}).then(function(x){
     if(x.ok&&x.j.access_token){sess(x.j,c.ph,c.w);afterLogin()}
     else if(x.ok)amsg("Le compte demande une confirmation par e-mail. Désactive « Confirm email » dans Supabase (Authentication > Providers > Email).");
     else if(/already|registered/i.test(JSON.stringify(x.j)))amsg("Ce numéro a déjà un compte. Touche « Me connecter ».");
     else if(x.s===429)amsg("Trop d’essais. Attends quelques minutes.");
     else amsg("Création impossible : "+(x.j.msg||x.j.message||x.j.error_description||x.s));
-  }).catch(function(){amsg("Pas de connexion. Réessaie quand tu as du réseau.")});
+  }).catch(function(e){amsg(netErr(e))});
 }
 function doLogin(){
   var c=cred();if(c.e){amsg(c.e);return}
   if(!navigator.onLine){amsg("Pas de connexion. Réessaie quand tu as du réseau.");return}
-  amsg("Connexion…");
-  authCall("token?grant_type=password",{email:c.m,password:c.p}).then(function(x){
+  amsg("Connexion… vérification anti-robot en cours.");
+  capCall("cft","token?grant_type=password",{email:c.m,password:c.p}).then(function(x){
     if(x.ok&&x.j.access_token){sess(x.j,c.ph);afterLogin()}
     else if(x.s===429)amsg("Trop d’essais. Attends quelques minutes.");
     else if(x.s===400||x.s===401||x.s===422)amsg("Numéro ou code incorrect.");
     else amsg("Connexion impossible : "+(x.j.msg||x.j.message||x.s));
-  }).catch(function(){amsg("Pas de connexion. Réessaie quand tu as du réseau.")});
+  }).catch(function(e){amsg(netErr(e))});
 }
+// ---- Anti-robot (Cloudflare Turnstile), actif seulement si config.js contient "captcha" ----
+var capW={},capT={},capP={};
+function capLoad(){
+  return new Promise(function(res,rej){
+    if(window.turnstile)return res();
+    var s=document.createElement("script");
+    s.src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";s.async=true;
+    s.onload=function(){res()};s.onerror=function(){rej("captcha")};
+    document.head.appendChild(s);
+  });
+}
+function cap(box){
+  if(!CF.captcha)return Promise.resolve(null);
+  if(capT[box]){var t=capT[box];capT[box]=null;return Promise.resolve(t)}
+  return capLoad().then(function(){
+    return new Promise(function(res,rej){
+      var to=setTimeout(function(){capP[box]=null;rej("captcha")},30000);
+      capP[box]={res:function(t){clearTimeout(to);res(t)},rej:function(){clearTimeout(to);rej("captcha")}};
+      if(capW[box]===undefined){
+        capW[box]=window.turnstile.render("#"+box,{sitekey:CF.captcha,appearance:"interaction-only",
+          callback:function(t){if(capP[box]){var p=capP[box];capP[box]=null;p.res(t)}else capT[box]=t},
+          "expired-callback":function(){capT[box]=null},
+          "error-callback":function(){if(capP[box]){var p=capP[box];capP[box]=null;p.rej()}}});
+      }else window.turnstile.reset(capW[box]);
+    });
+  });
+}
+function capUsed(box){capT[box]=null;if(window.turnstile&&capW[box]!==undefined){try{window.turnstile.reset(capW[box])}catch(e){}}}
+function capCall(box,path,body){
+  return cap(box).then(function(t){
+    var b=t?Object.assign({},body,{gotrue_meta_security:{captcha_token:t}}):body;
+    return authCall(path,b).then(function(x){capUsed(box);return x},function(e){capUsed(box);throw e});
+  });
+}
+function netErr(e){return e==="captcha"?"La vérification anti-robot n’a pas pu se faire. Vérifie ta connexion et réessaie.":"Pas de connexion. Réessaie quand tu as du réseau."}
 $("a1").onclick=doSignup;$("a2").onclick=doLogin;
 $("a3").onclick=function(){chg++;setDirty(true);syncNow()};
 $("a4").onclick=function(){logout(false)};
@@ -609,6 +676,109 @@ window.addEventListener("offline",status);
 document.addEventListener("visibilitychange",function(){if(!document.hidden&&au&&isDirty())syncNow()});
 status();
 if(au&&isDirty())syncNow();
+// ---- Verrouillage facultatif de l'app (code à 4 chiffres) ----
+var LKK="carnet_lock_v1",lc=null,lkMode="",lkBuf="",lkTmp="",hiddenAt=0;
+var LT={unlock:"Entre ton code",set1:"Choisis un code à 4 chiffres",set2:"Confirme ton code",off:"Entre ton code pour désactiver le verrouillage",chg:"Entre ton code actuel",forgot:"Entre le code secret de ton compte (6 chiffres)"};
+try{lc=JSON.parse(localStorage.getItem(LKK))}catch(e){lc=null}
+function hasLock(){return !!(lc&&lc.h)}
+function lkStore(){try{localStorage.setItem(LKK,JSON.stringify(lc))}catch(e){}}
+function b64(a){var s="";new Uint8Array(a).forEach(function(x){s+=String.fromCharCode(x)});return btoa(s)}
+function unb64(s){var r=atob(s),a=new Uint8Array(r.length);for(var i=0;i<r.length;i++)a[i]=r.charCodeAt(i);return a}
+function hashCode(code,salt){
+  return crypto.subtle.importKey("raw",new TextEncoder().encode(code),"PBKDF2",false,["deriveBits"]).then(function(k){
+    return crypto.subtle.deriveBits({name:"PBKDF2",salt:salt,iterations:100000,hash:"SHA-256"},k,256);
+  }).then(b64);
+}
+function lkSave(code){
+  var salt=crypto.getRandomValues(new Uint8Array(16));
+  return hashCode(code,salt).then(function(h){lc={s:b64(salt),h:h,f:0,t:0};lkStore()});
+}
+function lkCheck(code){return hashCode(code,unb64(lc.s)).then(function(h){return h===lc.h})}
+function lkLen(){return lkMode==="forgot"?6:4}
+function lkMsg(t){$("lkm").textContent=t||""}
+function lkDraw(){
+  $("lkt").textContent=LT[lkMode]||"";
+  var h="",n=lkLen();for(var i=0;i<n;i++)h+='<i'+(i<lkBuf.length?' class="on"':'')+'></i>';
+  $("lkd").innerHTML=h;
+  $("lkx").hidden=lkMode==="unlock";
+  $("lkf").hidden=!(lkMode==="unlock"||lkMode==="off"||lkMode==="chg");
+}
+function lkShow(m){lkMode=m;lkBuf="";lkTmp="";lkMsg("");$("lkz").hidden=true;$("lk").classList.add("show");lkDraw()}
+function lkClose(){$("lk").classList.remove("show");lkBuf="";lkMsg("")}
+function lkState(){$("lko").hidden=hasLock();$("lkn").hidden=!hasLock()}
+function lkUnlocked(){document.documentElement.classList.remove("locked");lkClose()}
+function lkWait(){var w=lc&&lc.t?lc.t-Date.now():0;return w>0?Math.ceil(w/1000):0}
+function lkKey(d){
+  if(d==="b"){lkBuf=lkBuf.slice(0,-1);lkDraw();return}
+  if(lkBuf.length>=lkLen())return;
+  if(lkMode==="unlock"||lkMode==="off"||lkMode==="chg"){var w=lkWait();if(w){lkMsg("Trop d’essais. Réessaie dans "+w+" s.");return}}
+  lkBuf+=d;lkDraw();
+  if(lkBuf.length===lkLen())lkDone();
+}
+function lkDone(){
+  var c=lkBuf;lkBuf="";
+  if(lkMode==="set1"){lkTmp=c;lkMode="set2";lkMsg("");lkDraw();return}
+  if(lkMode==="set2"){
+    if(c!==lkTmp){lkMode="set1";lkTmp="";lkMsg("Les deux codes sont différents. Recommence.");lkDraw();return}
+    lkSave(c).then(function(){lkClose();lkState();$("lm").textContent="Verrouillage activé."});
+    return;
+  }
+  if(lkMode==="forgot"){
+    capCall("cfl","token?grant_type=password",{email:au.ph+"@carnet-boutiquier.app",password:c}).then(function(x){
+      if(x.ok&&x.j.access_token){lc=null;try{localStorage.removeItem(LKK)}catch(e){}lkState();lkUnlocked();$("lm").textContent="Verrouillage désactivé. Tu peux en choisir un nouveau."}
+      else{lkMsg("Code du compte incorrect.");lkDraw()}
+    }).catch(function(e){lkMsg(netErr(e));lkDraw()});
+    return;
+  }
+  lkCheck(c).then(function(ok){
+    if(!ok){
+      lc.f=(lc.f||0)+1;
+      if(lc.f>=5)lc.t=Date.now()+Math.min(900000,30000*Math.pow(2,lc.f-5));
+      lkStore();lkMsg(lc.f>=5?"Code incorrect. Attends avant de réessayer.":"Code incorrect.");lkDraw();return;
+    }
+    lc.f=0;lc.t=0;lkStore();lkMsg("");
+    if(lkMode==="unlock")lkUnlocked();
+    else if(lkMode==="off"){lc=null;try{localStorage.removeItem(LKK)}catch(e){}lkClose();lkState();$("lm").textContent="Verrouillage désactivé."}
+    else if(lkMode==="chg"){lkMode="set1";lkDraw()}
+  });
+}
+function lkInit(){
+  var h="";["1","2","3","4","5","6","7","8","9","","0","b"].forEach(function(k){
+    h+=k===""?'<span></span>':'<button type="button" data-k="'+k+'" aria-label="'+(k==="b"?"Effacer":k)+'">'+(k==="b"?"⌫":k)+'</button>';
+  });
+  $("lkp").innerHTML=h;
+  $("lkp").onclick=function(e){var b=e.target.closest("button");if(b)lkKey(b.dataset.k)};
+  $("lkx").onclick=function(){
+    if(document.documentElement.classList.contains("locked")){lkMode="unlock";lkBuf="";lkMsg("");$("lkz").hidden=true;lkDraw()}
+    else lkClose();
+  };
+  $("lkf").onclick=function(){
+    if(au&&cfgOk()&&navigator.onLine){lkMode="forgot";lkBuf="";lkMsg("");lkDraw()}
+    else if(au)lkMsg("Pas de connexion. Reconnecte-toi à internet pour réinitialiser avec ton compte.");
+    else{lkMsg("Ce téléphone n’a pas de compte en ligne : la seule solution est d’effacer ses données.");$("lkz").hidden=false}
+  };
+  $("lkz").onclick=function(){
+    if(!this.dataset.s){this.dataset.s="1";this.textContent="Confirmer : tout effacer";lkMsg("Attention : les ventes, le stock et les crédits de ce téléphone seront perdus.");return}
+    [K,K2,K3,AK,DK,LK,LKK].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
+    location.reload();
+  };
+  $("l1").onclick=function(){
+    if(!(window.crypto&&crypto.subtle)){$("lm").textContent="Ce navigateur ne permet pas le verrouillage.";return}
+    lkShow("set1");
+  };
+  $("l2").onclick=function(){lkShow("off")};
+  $("l3").onclick=function(){lkShow("chg")};
+  lkState();
+  if(hasLock()){document.documentElement.classList.add("locked");lkShow("unlock")}
+  else document.documentElement.classList.remove("locked");
+  document.addEventListener("visibilitychange",function(){
+    if(document.hidden){hiddenAt=Date.now();return}
+    if(hasLock()&&hiddenAt&&Date.now()-hiddenAt>60000&&!document.documentElement.classList.contains("locked")){
+      document.documentElement.classList.add("locked");lkShow("unlock");
+    }
+  });
+}
+lkInit();
 </script>
 </body>
 </html>
