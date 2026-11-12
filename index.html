@@ -96,6 +96,9 @@ html.locked #lk,#lk.show{display:flex}
 .pad{display:grid;grid-template-columns:repeat(3,72px);gap:12px;margin:14px 0}
 .pad button{height:72px;border-radius:50%;font:inherit;font-size:26px;font-weight:600;border:1.5px solid var(--rule);background:var(--field);color:var(--ink)}
 #lk .chip{margin-top:6px}
+a.go{display:block;text-align:center;text-decoration:none;box-sizing:border-box;line-height:1.3}
+a.go[hidden]{display:none}
+.row[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -114,6 +117,7 @@ html.locked #lk,#lk.show{display:flex}
 <h1>Carnet du boutiquier</h1>
 <p class="date" id="date"></p>
 <button type="button" class="syl" id="sy" hidden></button>
+<button type="button" class="alert" id="ab2" hidden></button>
 <nav class="seg tabs"><button type="button" id="t1" aria-pressed="true">Vente</button><button type="button" id="t2" aria-pressed="false">Stock</button><button type="button" id="t3" aria-pressed="false">Crédits</button><button type="button" id="t4" aria-pressed="false">Bilan</button></nav>
 <div id="vv">
 <button type="button" class="alert" id="al" hidden></button>
@@ -210,6 +214,16 @@ html.locked #lk,#lk.show{display:flex}
 <div id="ai" hidden><p id="ap" style="margin:0 0 8px;font-weight:600"></p>
 <div class="row"><button type="button" class="go alt" id="a3">Sauvegarder maintenant</button><button type="button" class="go alt" id="a4">Me déconnecter</button></div></div>
 <p class="note" id="am" role="status" style="color:var(--ink)"></p>
+</div>
+<div id="abb" class="acc" hidden>
+<p class="t">Mon abonnement</p>
+<p id="abt" style="margin:0 0 6px;font-weight:600"></p>
+<p class="m" id="abm" style="margin:0 0 8px"></p>
+<p class="m" id="abi" style="margin:0 0 8px;color:var(--ink)" hidden></p>
+<p class="note" id="abs" role="status" style="color:var(--ink)"></p>
+<div class="row" id="abpr" hidden><button type="button" class="go" id="abp"></button></div>
+<div class="row" id="abvr" hidden style="margin-top:8px"><button type="button" class="go alt" id="abv">Vérifier mon paiement</button></div>
+<div class="row" style="margin-top:8px"><a id="abw" class="go alt" href="#" target="_blank" rel="noopener" hidden>Écrire au support (WhatsApp)</a><button type="button" class="go alt" id="abr">Actualiser</button></div>
 </div>
 <div id="lkb" class="acc">
 <p class="t">Verrouillage de l’app (facultatif)</p>
@@ -779,6 +793,111 @@ function lkInit(){
   });
 }
 lkInit();
+// ---- Affichage de l'abonnement (information seulement : rien n'est bloqué) ----
+var BK="carnet_abo_v1",ab=null,abErr=false;
+try{ab=JSON.parse(localStorage.getItem(BK))}catch(e){ab=null}
+function dFr(s){var p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}
+function dLeft(s){var p=s.split("-"),e=new Date(+p[0],+p[1]-1,+p[2]),n=new Date();n.setHours(0,0,0,0);return Math.round((e-n)/864e5)}
+function aboFetch(){
+  if(!au||!cfgOk()||!navigator.onLine)return Promise.resolve();
+  return token().then(function(t){return fetch(CF.url+"/rest/v1/abonnements?select=actif_jusqu_au",{headers:jh(t)})})
+    .then(function(r){if(!r.ok)throw "abo";return r.json()})
+    .then(function(a){ab={d:a&&a[0]?a[0].actif_jusqu_au:null,t:Date.now()};abErr=false;try{localStorage.setItem(BK,JSON.stringify(ab))}catch(e){}})
+    .catch(function(){abErr=true}).then(aboDraw);
+}
+function aboDraw(){
+  var b=$("abb"),a2=$("ab2");
+  if(!au||!cfgOk()){b.hidden=true;a2.hidden=true;return}
+  b.hidden=false;a2.hidden=true;
+  var tx="",ms="",warn="",soon=false;
+  if(!ab){tx="Vérification en cours…";ms=navigator.onLine?"":"Connecte-toi à internet pour voir ton abonnement."}
+  else if(!ab.d){tx="Période d’essai gratuite";ms="Aucun paiement n’est demandé pour le moment."}
+  else{
+    var n=dLeft(ab.d);
+    if(n>=0){
+      tx="Abonnement actif jusqu’au "+dFr(ab.d);
+      ms=n===0?"Dernier jour aujourd’hui.":n+" jour"+(n>1?"s":"")+" restant"+(n>1?"s":"")+".";
+      if(n<=7){soon=true;warn="Ton abonnement se termine "+(n===0?"aujourd’hui":"dans "+n+" jour"+(n>1?"s":""))+". Voir comment renouveler"}
+    }else{
+      tx="Abonnement expiré depuis le "+dFr(ab.d);
+      ms="Ton carnet continue de fonctionner. Renouvelle ton abonnement pour rester en règle.";
+      soon=true;warn="Ton abonnement est expiré. Voir comment renouveler";
+    }
+  }
+  $("abt").textContent=tx;
+  $("abm").textContent=ms+(ab&&ab.t&&(abErr||!navigator.onLine)?" (dernière vérification "+ago(ab.t)+")":"");
+  $("abi").textContent=CF.abo||"";$("abi").hidden=!(soon&&CF.abo);
+  var w=$("abw");
+  if(CF.wa){w.hidden=false;w.href="https://wa.me/"+String(CF.wa).replace(/\D/g,"")+"?text="+encodeURIComponent("Bonjour, je suis "+(au.nm||"un boutiquier")+" (+"+au.ph+"). Je voudrais renouveler mon abonnement au Carnet du boutiquier.")}
+  else w.hidden=true;
+  if(warn){a2.textContent=warn;a2.hidden=false}
+}
+var _st=status;status=function(){_st();aboDraw()};
+var _lo=logout;logout=function(x){ab=null;try{localStorage.removeItem(BK)}catch(e){}_lo(x)};
+var _al=afterLogin;afterLogin=function(){ab=null;aboFetch();_al()};
+$("abr").onclick=function(){aboFetch()};
+$("ab2").onclick=function(){$("abb").scrollIntoView({behavior:"smooth"})};
+window.addEventListener("online",function(){aboFetch()});
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&au&&(!ab||Date.now()-ab.t>21600000))aboFetch()});
+aboDraw();
+if(au)aboFetch();
+// ---- Paiement de l'abonnement (SasPay, via la fonction Supabase « saspay ») ----
+var PK="carnet_pay_v1",payT=0,payBusy=false;
+try{payT=+localStorage.getItem(PK)||0}catch(e){payT=0}
+function fmtF(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g," ")}
+function pmsg(t){$("abs").textContent=t||""}
+function fnCall(action){
+  return token().then(function(t){
+    return fetch(CF.url+"/functions/v1/saspay",{method:"POST",headers:jh(t),body:JSON.stringify({action:action})});
+  }).then(function(r){return r.json().catch(function(){return {}}).then(function(j){return {ok:r.ok,s:r.status,j:j}})});
+}
+function payer(){
+  if(!au||!cfgOk()||payBusy)return;
+  if(!navigator.onLine){pmsg("Connecte-toi à internet pour payer.");return}
+  payBusy=true;pmsg("Préparation du paiement…");
+  fnCall("creer").then(function(x){
+    if(x.ok&&x.j.checkout_url){
+      payT=Date.now();try{localStorage.setItem(PK,String(payT))}catch(e){}
+      pmsg("Ouverture de la page de paiement…");location.assign(x.j.checkout_url);
+    }else pmsg(x.s===429?"Trop de tentatives. Réessaie plus tard.":"Le paiement n’a pas pu être préparé. Réessaie dans un instant.");
+  }).catch(function(){pmsg("Pas de connexion. Réessaie plus tard.")}).then(function(){payBusy=false});
+}
+function payCheck(manual){
+  if(!au||!cfgOk()||payBusy)return;
+  if(!navigator.onLine){if(manual)pmsg("Connecte-toi à internet pour vérifier.");return}
+  payBusy=true;if(manual)pmsg("Vérification du paiement…");
+  fnCall("verifier").then(function(x){
+    if(!x.ok){if(manual)pmsg("Vérification impossible pour le moment.");return}
+    if(x.j.nouveau){
+      payT=0;try{localStorage.removeItem(PK)}catch(e){}
+      pmsg("Paiement confirmé. Merci !"+(x.j.actif_jusqu_au?" Abonnement actif jusqu’au "+dFr(x.j.actif_jusqu_au)+".":""));
+      return aboFetch();
+    }
+    if(manual)pmsg(x.j.en_attente?"Paiement pas encore confirmé. Si tu viens de payer, réessaie dans une minute.":"Aucun paiement en attente.");
+  }).catch(function(){if(manual)pmsg("Pas de connexion.")}).then(function(){payBusy=false});
+}
+var _ad=aboDraw;
+aboDraw=function(){
+  _ad();
+  var on=!!(CF.pay&&au&&cfgOk());
+  $("abpr").hidden=!on;$("abvr").hidden=!on;
+  $("abp").textContent="Payer mon abonnement ("+fmtF(CF.prix||3100)+" FCFA)";
+};
+$("abp").onclick=payer;
+$("abv").onclick=function(){payCheck(true)};
+function payInit(){
+  var back=/[?&]paiement=/.test(location.search||"");
+  if(back){try{history.replaceState(null,"",location.pathname)}catch(e){}}
+  if(!au)return;
+  if(back||(payT&&Date.now()-payT<1800000)){
+    payCheck(true);
+    setTimeout(function(){payCheck(false)},8000);
+    setTimeout(function(){payCheck(false)},20000);
+  }
+}
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&au&&payT&&Date.now()-payT<1800000)payCheck(false)});
+aboDraw();
+payInit();
 </script>
 </body>
 </html>
