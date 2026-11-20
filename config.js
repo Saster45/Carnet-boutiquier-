@@ -11,4 +11,4 @@ window.CARNET_CFG={
   prix:3100,
   jours:30,
   abo:"",
-  wa:""};
+  wa:"2290152242514"};
